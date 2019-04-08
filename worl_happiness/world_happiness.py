@@ -1,37 +1,35 @@
 
-
+# load the data, need the country code in map_df
 forest_df = pd.read_csv('/Users/yueying.teng/Documents/local_folder_of_continuous_visualizing/world_happines/data/forest_coverage_percent.csv')
 map_df = pd.read_csv('https://raw.githubusercontent.com/plotly/datasets/master/2014_world_gdp_with_codes.csv')
 
-
 forest_df = pd.merge(forest_df, map_df[['COUNTRY', 'CODE']], how = 'inner', left_on = 'country', right_on = 'COUNTRY')
 
-
+# create df for the plot with the following columns - country, year, forest, code
+# df will have repeated values in year column
+timestamp = [str(i) for i in np.arange(1990, 2015, 2)]
+y = [timestamp for i in range(len(country))]
+year = [i for sub in y for i in sub]
+cover = forest_df[timestamp].values.reshape(-1, 1)
 country = forest_df['country']
 country_rep = np.repeat(country, len(timestamp)).values
 
 code = forest_df['CODE']
 code_rep = np.repeat(code, len(timestamp)).values
 
-timestamp = [str(i) for i in np.arange(1990, 2015, 2)]
-y = [timestamp for i in range(len(country))]
-year = [i for sub in y for i in sub]
-cover = forest_df[timestamp].values.reshape(-1, 1)
-
 forest = pd.DataFrame({'country': country_rep, 'year': np.array(year), 'forest': np.ravel(cover), 'code': code_rep})
 
-
-
+# move the forest cover column one row done to find the changes in forest coverage
 forest['forest'].iloc[1:] - forest['forest']
 forest['forest_shifted'] = forest['forest'].shift(-1)
 forest['diff'] = forest['forest_shifted'] - forest['forest']
 
-
+# for the forest coverage in the first year of each country, repalce them with NaN
 for i in range(forest.shape[0]):
     if i % 13 == 0:
         forest['diff'].iloc[i] = np.nan
         
-
+# all increase will be coded as 1, decrease as -1, no change and NaN are coded as 0
 mapped = []
 
 for i in range(forest.shape[0]):
@@ -49,11 +47,10 @@ for i in range(forest.shape[0]):
 forest['diff_std'] = mapped
 
 
-
+### choropleth maps 
 years = timestamp
 
 # make figure
-# figure = {'data': [], 'layout': {}, 'frames': []}
 figure = {'layout': {}, 'frames': []}
 
 # fill in most of layout
@@ -126,7 +123,6 @@ data_dict = [{'type': 'choropleth', 'locations': dataset_by_year['code'].astype(
                             [0.5, "#F1F5F2"],
                             [1, "#355834"]]}
             ]
-# figure['data'].append(data_dict)
 figure['data'] = data_dict
     
 # make frames
@@ -134,8 +130,6 @@ for year in years:
     frame = {'data': [], 'name': year}
     
     dataset_by_year = forest[forest['year'] == year]
-#     data_dict = [{'type': 'choropleth', 'locations': dataset_by_year['code'].astype(str),
-#              'z': dataset_by_year['forest'].astype(float)}]
     data_dict = {'type': 'choropleth', 'locations': dataset_by_year['code'].astype(str),
              'z': dataset_by_year['diff_std'].astype(float)}
 
@@ -170,7 +164,6 @@ fertility_df =  pd.read_csv('/Users/yueying.teng/Documents/local_folder_of_conti
 # gender ratio of mean years in school women over men 25 to 34 years old
 edu_ratio_df = pd.read_csv('/Users/yueying.teng/Documents/local_folder_of_continuous_visualizing/world_happines/data/mean_years_in_school_women_percent_men_25_to_34_years.csv')
 
-
 # dataset with continent column
 url = 'https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv'
 dataset = pd.read_csv(url)
@@ -190,8 +183,7 @@ fertility_df = fertility_df[edu_ratio_df.columns]
 kept_dataset = dataset[dataset['country'].isin(list(kept_country))]
 
 
-# create the df used to make the animated bubble plot with the following columns
-# country, year, continent, mortality, fertility, education
+# create the df used to make the animated bubble plot with the following columns - country, year, continent, mortality, fertility, education
 
 df = pd.DataFrame({})
 
@@ -308,7 +300,6 @@ for continent in continents:
         'marker': {
             'sizemode': 'area',
             'sizeref': 0.1,
-#             'color': dataset_by_year_and_cont['edu_ratio'],
             'size': list(dataset_by_year_and_cont['edu_ratio'])
         },
         'name': continent
@@ -336,7 +327,6 @@ for year in years:
             'marker': {
                 'sizemode': 'area',
                 'sizeref': 0.1,
-#                 'color': dataset_by_year_and_cont['edu_ratio'],
                 'size': list(dataset_by_year_and_cont['edu_ratio'])
             },
             'name': continent
