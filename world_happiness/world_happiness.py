@@ -8,21 +8,21 @@ forest_df = pd.merge(forest_df, map_df[['COUNTRY', 'CODE']], how = 'inner', left
 # create df for the plot with the following columns - country, year, forest, code
 # df will have repeated values in year column
 timestamp = [str(i) for i in np.arange(1990, 2015, 2)]
+country = forest_df['country']
+country_rep = np.repeat(country, len(timestamp)).values
 y = [timestamp for i in range(len(country))]
 year = [i for sub in y for i in sub]
 cover = forest_df[timestamp].values.reshape(-1, 1)
-country = forest_df['country']
-country_rep = np.repeat(country, len(timestamp)).values
-
 code = forest_df['CODE']
 code_rep = np.repeat(code, len(timestamp)).values
 
 forest = pd.DataFrame({'country': country_rep, 'year': np.array(year), 'forest': np.ravel(cover), 'code': code_rep})
 
+
 # move the forest cover column one row done to find the changes in forest coverage
 forest['forest'].iloc[1:] - forest['forest']
-forest['forest_shifted'] = forest['forest'].shift(-1)
-forest['diff'] = forest['forest_shifted'] - forest['forest']
+forest['forest_shifted'] = forest['forest'].shift(1)
+forest['diff'] = forest['forest'] - forest['forest_shifted']
 
 # for the forest coverage in the first year of each country, repalce them with NaN
 for i in range(forest.shape[0]):
