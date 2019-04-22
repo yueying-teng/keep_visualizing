@@ -72,7 +72,7 @@ jr_gpd = no_point_rail_gpd[no_point_rail_gpd['clean_name'].isin(jr_line_name)]
 
 
 # generate one color for each line
-random.Random(2019)
+random.seed(321)
 num_color = len(np.unique(jr_gpd['clean_name']))
 color = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)])
              for i in range(num_color)]
@@ -193,7 +193,7 @@ tokyo_plot = ColumnDataSource(tokyo_plot)
 park_plot = park_coord.drop('geometry', axis=1).copy()
 park_plot = ColumnDataSource(park_plot)
 
-jr_coord.rename(columns={'name': 'jr_name'}, inplace=True)
+jr_coord.rename(columns={'clean_name': 'jr_name'}, inplace=True)
 jr_plot = jr_coord.drop('geometry', axis=1).copy()
 jr_plot = ColumnDataSource(jr_plot)
 
@@ -202,7 +202,7 @@ jr_plot = ColumnDataSource(jr_plot)
 output_file("park_jr_map.html", title='jr_park_tokyo')
 
 p = figure(title='park_jr_map', active_scroll="wheel_zoom",
-           plot_height=400, plot_width=700)
+           plot_height=720, plot_width=1260)
 
 # Plot grid
 p.patches('x', 'y', source=tokyo_plot,
