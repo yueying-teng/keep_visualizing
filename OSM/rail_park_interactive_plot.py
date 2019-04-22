@@ -177,7 +177,7 @@ park_coord['x'] = park_coord.apply(
 park_coord['y'] = park_coord.apply(
     getpolycoords, geom='geometry', coord_type='y', axis=1)
 
-jr_coord = jr_gpd[['name', 'geometry', 'color']]
+jr_coord = jr_gpd[['clean_name', 'geometry', 'color']]
 jr_coord['x'] = jr_gpd.apply(
     getlinecoords, geom='geometry', coord_type='x', axis=1)
 jr_coord['y'] = jr_gpd.apply(
