@@ -19,23 +19,22 @@ file = './japan_ver81/japan_ver81.shp'
 jp = gpd.read_file(file)
 
 
-
-# ### processs geojson data 
+# ### processs geojson data
 
 # some parks are too far away from the center of tokyo, remove them
 
-# get the latitude of all parks 
+# get the latitude of all parks
 lat_list = []
 for i, row in park_gpd.iterrows():
     lat = row.geometry.centroid.coords.xy[-1][0]
     lat_list.append(lat)
-    
+
 park_gpd['centroid_lat'] = lat_list
 
 
 # remove the point geometry from the rail_gpd
 no_point_rail_gpd = rail_gpd[rail_gpd['geometry'].geom_type != 'Point']
-# remove those lines without names 
+# remove those lines without names
 no_point_rail_gpd = no_point_rail_gpd[no_point_rail_gpd['name'].notnull()]
 
 # remove point geometry from park_gpd
@@ -65,7 +64,7 @@ no_point_rail_gpd['clean_name'] = clean_name
 
 
 # keep only JR lines
-jr_line_name = ['山手線', '総武線', '青梅線', '中央線', '京浜東北線', '南武線', '埼京線', '中央本線', '常磐線', '五日市線', '湘南新宿ライン', 
+jr_line_name = ['山手線', '総武線', '青梅線', '中央線', '京浜東北線', '南武線', '埼京線', '中央本線', '常磐線', '五日市線', '湘南新宿ライン',
                 '京葉線', '八高線', '横浜線', '武蔵野線', '総武本線', '横須賀線', '東北本線', '東海道本線', '高崎線', '上越新幹線', '上野東京ライン',
                 '北陸新幹線', '東北新幹線', '東海道新幹線']
 
@@ -81,7 +80,7 @@ color = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)])
 # create the color dict
 color_dict = {}
 line_name = np.unique(jr_gpd['clean_name'])
-                     
+
 for i in range(len(line_name)):
     color_dict[line_name[i]] = color[i]
 
@@ -89,16 +88,14 @@ color = []
 for i in range(jr_gpd.shape[0]):
     c = color_dict[jr_gpd['clean_name'].iloc[i]]
     color.append(c)
-    
+
 jr_gpd['color'] = color
 
 
-
-# keep the same crs for all layers 
-print (jp.crs, jr_gpd.crs, no_point_park_gpd.crs)
+# keep the same crs for all layers
+print(jp.crs, jr_gpd.crs, no_point_park_gpd.crs)
 
 jp['geometry'] = jp['geometry'].to_crs({'init': 'epsg:4326'})
-
 
 
 def multipoly_to_poly(gdf, identifier):
@@ -117,7 +114,7 @@ def multipoly_to_poly(gdf, identifier):
             continue
 
         elif row['geometry'].geom_type == 'MultiPolygon':
-            # keep multipolygon city name to remove later 
+            # keep multipolygon city name to remove later
             mulitpoly_name.append(row[identifier])
             split_multipoly = list(row['geometry'])
 
@@ -125,11 +122,12 @@ def multipoly_to_poly(gdf, identifier):
                 poly_name = row[identifier] + '_' + str(j)
                 expend_name.append(poly_name)
                 expend_geom.append(split_multipoly[j])
-                
-    to_exp = gpd.GeoDataFrame({identifier: expend_name, 'geometry': expend_geom})
+
+    to_exp = gpd.GeoDataFrame(
+        {identifier: expend_name, 'geometry': expend_geom})
     gdf = gdf[~gdf[identifier].isin(mulitpoly_name)]
     gdf = pd.concat([gdf, to_exp],)
-    
+
     return gdf
 
 
@@ -143,86 +141,87 @@ park_coord = park_coord[park_coord['geometry'].geom_type != 'LineString']
 park_coord = multipoly_to_poly(park_coord, 'name')
 
 
-
-# parse x and y values for jp shp 
+# parse x and y values for jp shp
 
 def getpolycoords(row, geom, coord_type):
     """
     returns the coordinates x and y instead of edges of polygon
     """
     exterior = row[geom].exterior
-    
+
     if coord_type == 'x':
         return list(exterior.coords.xy[0])
     elif coord_type == 'y':
         return list(exterior.coords.xy[1])
 
 
-
 def getlinecoords(row, geom, coord_type):
     """
     returns a list of coordinates x and y of a LineString geometry
     """
-    
+
     if coord_type == 'x':
         return list(row[geom].coords.xy[0])
     elif coord_type == 'y':
         return list(row[geom].coords.xy[1])
-    
 
 
 # no_point_park_gpd, jr_gpd
+tokyo_coord['x'] = tokyo_coord.apply(
+    getpolycoords, geom='geometry', coord_type='x', axis=1)
+tokyo_coord['y'] = tokyo_coord.apply(
+    getpolycoords, geom='geometry', coord_type='y', axis=1)
 
-tokyo_coord['x'] = tokyo_coord.apply(getpolycoords, geom = 'geometry', coord_type = 'x', axis = 1)
-tokyo_coord['y'] = tokyo_coord.apply(getpolycoords, geom = 'geometry', coord_type = 'y', axis = 1)
-
-park_coord['x'] = park_coord.apply(getpolycoords, geom = 'geometry', coord_type = 'x', axis = 1)
-park_coord['y'] = park_coord.apply(getpolycoords, geom = 'geometry', coord_type = 'y', axis = 1)
+park_coord['x'] = park_coord.apply(
+    getpolycoords, geom='geometry', coord_type='x', axis=1)
+park_coord['y'] = park_coord.apply(
+    getpolycoords, geom='geometry', coord_type='y', axis=1)
 
 jr_coord = jr_gpd[['name', 'geometry', 'color']]
-jr_coord['x'] = jr_gpd.apply(getlinecoords, geom = 'geometry', coord_type = 'x', axis = 1)
-jr_coord['y'] = jr_gpd.apply(getlinecoords, geom = 'geometry', coord_type = 'y', axis = 1)
+jr_coord['x'] = jr_gpd.apply(
+    getlinecoords, geom='geometry', coord_type='x', axis=1)
+jr_coord['y'] = jr_gpd.apply(
+    getlinecoords, geom='geometry', coord_type='y', axis=1)
 
 
-
-# tokyo_coord, park_coord, jr_coord  
-
-tokyo_plot = tokyo_coord.drop('geometry', axis = 1).copy()
+# tokyo_coord, park_coord, jr_coord
+tokyo_coord['distrct_name'] = tokyo_coord['SIKUCHOSON'].apply(
+    lambda x: x.split('_')[0])
+tokyo_plot = tokyo_coord.drop('geometry', axis=1).copy()
 tokyo_plot = ColumnDataSource(tokyo_plot)
 
-park_plot = park_coord.drop('geometry', axis = 1).copy()
+park_plot = park_coord.drop('geometry', axis=1).copy()
 park_plot = ColumnDataSource(park_plot)
 
-jr_coord.rename(columns = {'name': 'jr_name'}, inplace = True)
-jr_plot = jr_coord.drop('geometry', axis = 1).copy()
+jr_coord.rename(columns={'name': 'jr_name'}, inplace=True)
+jr_plot = jr_coord.drop('geometry', axis=1).copy()
 jr_plot = ColumnDataSource(jr_plot)
 
 
-### plot
-output_file("park_jr_map.html", title = 'jr_park_tokyo')
+# plot
+output_file("park_jr_map.html", title='jr_park_tokyo')
 
-p = figure(title = 'park_jr_map', active_scroll = "wheel_zoom",
-          plot_height=400, plot_width=700)
+p = figure(title='park_jr_map', active_scroll="wheel_zoom",
+           plot_height=400, plot_width=700)
 
 # Plot grid
 p.patches('x', 'y', source=tokyo_plot,
-          color = 'grey',
+          color='grey',
           fill_alpha=0.7, line_color="white", line_width=0.05)
 
 p.patches('x', 'y', source=park_plot,
-         fill_color='green',
-         fill_alpha=0.8, line_color="green", line_width=0.05)
+          fill_color='green',
+          fill_alpha=0.8, line_color="green", line_width=0.05)
 
-p.multi_line('x', 'y', color = 'color', source = jr_plot, line_width = 1.2, line_alpha = 0.4)
+p.multi_line('x', 'y', color='color', source=jr_plot,
+             line_width=1.2, line_alpha=0.4)
 
 # let's also add the hover over info tool
 tooltip = HoverTool()
 tooltip.tooltips = [('Name of the park', '@name'),
-                    ('Name of the line', '@jr_name')]
+                    ('Name of the line', '@jr_name'),
+                    ('Name of the district', '@distrct_name')]
 
 p.add_tools(tooltip)
 
 show(p)
-
-
-
